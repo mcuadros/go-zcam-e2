@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"strconv"
 	"time"
 )
@@ -31,6 +32,14 @@ const (
 	Screennail Format = "screennail"
 )
 
+func (f *File) Folder() string {
+	return f.folder
+}
+
+func (f *File) Filename() string {
+	return f.file
+}
+
 func (f *File) Open(format Format) error {
 	var err error
 	switch format {
@@ -52,12 +61,12 @@ func (f *File) Read(p []byte) (n int, err error) {
 		return -1, ErrFileNotOpen
 	}
 
-	return f.Read(p)
+	return f.ReadCloser.Read(p)
 }
 
 func (f *File) Close() error {
 	if f.ReadCloser != nil {
-		return f.Close()
+		return f.ReadCloser.Close()
 	}
 
 	return nil
@@ -83,12 +92,26 @@ func (f *File) CreatedAt() (time.Time, error) {
 
 func (f *File) Delete() error {
 	defer f.Close()
-	_, err := f.cli.DeleteFile(f.folder, f.file)
-	if err != nil {
-		return err
+	return f.cli.DeleteFile(f.folder, f.file)
+}
+
+// Download copy the camera file to a local file, return the downloaded bytes.
+// It opens and close this File,
+func (f *File) Download(format Format, filename string) (int64, error) {
+	if err := f.Open(format); err != nil {
+		return -1, fmt.Errorf("unable to open file %q in folder %q: %w", f.file, f.folder, err)
 	}
 
-	return nil
+	defer f.Close()
+
+	file, err := os.Create(filename)
+	if err != nil {
+		return -1, fmt.Errorf("unable to create file %q: %w", filename, err)
+	}
+
+	defer file.Close()
+
+	return io.Copy(file, f)
 }
 
 type fileListResponse struct {
@@ -135,6 +158,26 @@ func (c *CameraClient) ListFiles(folder string) ([]*File, error) {
 	return files, err
 }
 
+// ListAllFiles lists the files in a all the folders
+func (c *CameraClient) ListAllFiles() ([]*File, error) {
+	folders, err := c.ListFolders()
+	if err != nil {
+		return nil, fmt.Errorf("error retrieving folders: %w", err)
+	}
+
+	var files []*File
+	for _, folder := range folders {
+		f, err := c.ListFiles(folder)
+		if err != nil {
+			return nil, fmt.Errorf("error retrieving files from folder %s: %w", folder, err)
+		}
+
+		files = append(files, f...)
+	}
+
+	return files, nil
+}
+
 // OpenFile downloads a specific file from a given folder.
 func (c *CameraClient) OpenFile(folder, filename string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s", folder, filename)
@@ -142,7 +185,7 @@ func (c *CameraClient) OpenFile(folder, filename string) (io.ReadCloser, error) 
 }
 
 // DeleteFile deletes a specific file from a given folder
-func (c *CameraClient) DeleteFile(folder, filename string) (*CameraControlResponse, error) {
+func (c *CameraClient) DeleteFile(folder, filename string) error {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=rm", folder, filename)
 	return c.sendControlRequest(endpoint)
 }

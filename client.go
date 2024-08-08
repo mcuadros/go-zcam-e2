@@ -2,12 +2,10 @@ package zcam
 
 import (
 	"encoding/json"
-	"errors"
 	"fmt"
 	"io/ioutil"
 	"net"
 	"net/http"
-	"strings"
 	"time"
 )
 
@@ -46,7 +44,6 @@ func (c *CameraClient) get(endpoint string) ([]byte, error) {
 	return body, nil
 }
 
-// decodeJSON is a helper function to decode a JSON response into the provided interface
 func decodeJSON(data []byte, v interface{}) error {
 	if err := json.Unmarshal(data, v); err != nil {
 		return fmt.Errorf("error decoding JSON response: %w", err)
@@ -54,18 +51,21 @@ func decodeJSON(data []byte, v interface{}) error {
 	return nil
 }
 
-// HealthCheck performs a health check on the camera's API service
-func (c *CameraClient) HealthCheck() (*HealthCheckResponse, error) {
-	body, err := c.get("/url")
-	if err != nil {
-		return nil, err
+func decodeBasicRequest(data []byte) error {
+	var r struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
 	}
 
-	var result HealthCheckResponse
-	if err := decodeJSON(body, &result); err != nil {
-		return nil, err
+	if err := decodeJSON(data, &r); err != nil {
+		return err
 	}
-	return &result, nil
+
+	if r.Code != 0 {
+		return fmt.Errorf("unexpected code %d", r.Code)
+	}
+
+	return nil
 }
 
 // GetCameraInfo retrieves and returns the camera information
@@ -83,23 +83,23 @@ func (c *CameraClient) GetCameraInfo() (*CameraInfo, error) {
 }
 
 // StartSession starts a control session with the camera
-func (c *CameraClient) StartSession() (string, error) {
+func (c *CameraClient) StartSession() error {
 	body, err := c.get("/ctrl/session")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(body), nil
+	return decodeBasicRequest(body)
 }
 
 // QuitSession ends the control session with the camera
-func (c *CameraClient) QuitSession() (string, error) {
+func (c *CameraClient) QuitSession() error {
 	body, err := c.get("/ctrl/session?action=quit")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(body), nil
+	return decodeBasicRequest(body)
 }
 
 // SyncDateTime synchronizes the camera's date and time with the current system time
@@ -133,93 +133,30 @@ func (c *CameraClient) RebootSystem() (string, error) {
 	return string(body), nil
 }
 
+type WorkingMode string
+
+// Camera mode constants
+const (
+	// VideoRecordWorkingMode video record mode
+	VideoRecordWorkingMode = "rec"
+	// PlaybackWorkingMode playback mode
+	PlaybackWorkingMode = "pb"
+	// StandbyWorkingMode standby mode
+	StandbyWorkingMode = "standby"
+	// ExitStandbyWorkingMode exit_standby
+	ExitStandbyWorkingMode = "exit_standby"
+	// VideoRecordTimeLapseWorkingMode video timelapse record
+	VideoRecordTimeLapseWorkingMode = "rec_tl"
+)
+
 // ChangeWorkingMode switches the camera's working mode based on the provided constant
-func (c *CameraClient) ChangeWorkingMode(mode string) (string, error) {
-	var endpoint string
-
-	switch mode {
-	case ModeVideoRecord:
-		endpoint = "/ctrl/mode?action=to_rec"
-	case ModePlayback:
-		endpoint = "/ctrl/mode?action=to_pb"
-	case ModeStandby:
-		endpoint = "/ctrl/mode?action=to_standby"
-	case ModeExitStandby:
-		endpoint = "/ctrl/mode?action=exit_standby"
-	default:
-		return "", errors.New("unknown mode")
-	}
-
-	body, err := c.get(endpoint)
+func (c *CameraClient) ChangeWorkingMode(mode WorkingMode) (string, error) {
+	body, err := c.get(fmt.Sprintf("/ctrl/mode?action=%s", mode))
 	if err != nil {
 		return "", err
 	}
 
 	return string(body), nil
-}
-
-// StartVideoRecord starts video recording or video timelapse recording
-func (c *CameraClient) StartVideoRecord() (string, error) {
-	body, err := c.get("/ctrl/rec?action=start")
-	if err != nil {
-		return "", err
-	}
-
-	return string(body), nil
-}
-
-// StopVideoRecord stops video recording or video timelapse recording
-func (c *CameraClient) StopVideoRecord() (string, error) {
-	body, err := c.get("/ctrl/rec?action=stop")
-	if err != nil {
-		return "", err
-	}
-
-	return string(body), nil
-}
-
-// QueryRemainingRecordingTime queries the remaining recording time in minutes
-func (c *CameraClient) QueryRemainingRecordingTime() (*RemainingTimeResponse, error) {
-	body, err := c.get("/ctrl/rec?action=remain")
-	if err != nil {
-		return nil, err
-	}
-
-	var remain RemainingTimeResponse
-	if err := decodeJSON(body, &remain); err != nil {
-		return nil, err
-	}
-	return &remain, nil
-}
-
-// GetSetting retrieves a camera setting based on its key
-func (c *CameraClient) GetSetting(key string) (*CameraSettingResponse, error) {
-	endpoint := fmt.Sprintf("/ctrl/get?k=%s", key)
-	body, err := c.get(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	var setting CameraSettingResponse
-	if err := decodeJSON(body, &setting); err != nil {
-		return nil, err
-	}
-	return &setting, nil
-}
-
-// SetSetting changes a camera setting for a given key to a specified value
-func (c *CameraClient) SetSetting(key, value string) (*SetSettingResponse, error) {
-	endpoint := fmt.Sprintf("/ctrl/set?%s=%s", key, value)
-	body, err := c.get(endpoint)
-	if err != nil {
-		return nil, err
-	}
-
-	var response SetSettingResponse
-	if err := decodeJSON(body, &response); err != nil {
-		return nil, err
-	}
-	return &response, nil
 }
 
 // SetNetworkMode sets the camera's network mode, using net.IP and net.IPMask

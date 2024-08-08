@@ -2,12 +2,13 @@ package zcam
 
 import (
 	"fmt"
+	"strconv"
 )
 
 type cardManagementResponse struct {
 	Code int    `json:"code"`
 	Desc string `json:"desc"`
-	Msg  int    `json:"msg"`
+	Msg  string `json:"msg"`
 }
 
 // CheckCardPresence checks if a storage card is present in the camera
@@ -21,8 +22,17 @@ func (c *CameraClient) CheckCardPresence() (bool, error) {
 }
 
 // FormatCard formats the storage card based on its capacity
-func (c *CameraClient) FormatCard() (*cardManagementResponse, error) {
-	return c.sendCardRequest("/ctrl/card?action=format")
+func (c *CameraClient) FormatCard() error {
+	r, err := c.sendCardRequest("/ctrl/card?action=format")
+	if err != nil {
+		return err
+	}
+
+	if r.Code != 0 {
+		return fmt.Errorf("unexpected code %d", r.Code)
+	}
+
+	return nil
 }
 
 // FormatCardAs formats the card specifically to either 'fat32' or 'exfat'
@@ -64,7 +74,7 @@ func (c *CameraClient) queryCardSpace(action string) (int, error) {
 		return -1, err
 	}
 
-	return r.Msg, nil
+	return strconv.Atoi(r.Msg)
 }
 
 // sendCardRequest sends a GET request to the card management endpoints and parses the response

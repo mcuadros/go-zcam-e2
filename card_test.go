@@ -14,7 +14,7 @@ func TestCheckCardPresence(t *testing.T) {
 	require.True(t, is)
 }
 
-func TestCheck(t *testing.T) {
+func TestQueryCardTotalSpace(t *testing.T) {
 	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
 	space, err := cli.QueryCardTotalSpace()
 	require.NoError(t, err)

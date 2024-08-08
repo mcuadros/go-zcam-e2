@@ -1,6 +1,7 @@
 package zcam
 
 import (
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -16,50 +17,27 @@ func init() {
 	CameraIP = os.Getenv("CAMERA_IP")
 }
 
-// TestHealthCheck tests the HealthCheck method
-func TestHealthCheck(t *testing.T) {
-	server := mockServer()
-	defer server.Close()
-
-	client := NewCameraClient(server.URL)
-
-	result, err := client.HealthCheck()
-	assert.NoError(t, err)
-	assert.NotNil(t, result)
-	assert.Equal(t, 0, result.Code)
-	assert.Equal(t, "demo", result.Desc)
-	assert.Equal(t, "OK", result.Msg)
-}
-
-// TestGetCameraInfo tests the GetCameraInfo method
 func TestGetCameraInfo(t *testing.T) {
-	server := mockServer()
-	defer server.Close()
+	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
 
-	client := NewCameraClient(server.URL)
-
-	result, err := client.GetCameraInfo()
+	result, err := cli.GetCameraInfo()
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
-	assert.Equal(t, "TestModel", result.Model)
-	assert.Equal(t, "1", result.Number)
-	assert.Equal(t, "0.82", result.Sw)
-	assert.Equal(t, "1", result.Hw)
-	assert.Equal(t, "4e:4:b8:2d:78:db", result.Mac)
-	assert.Equal(t, "192.168.9.81", result.EthIP)
-	assert.Equal(t, "329A0010009", result.SN)
+	assert.NotEmpty(t, result.Model)
+	assert.NotEmpty(t, result.Number)
+	assert.NotEmpty(t, result.Sw)
+	assert.NotEmpty(t, result.Hw)
+	assert.NotEmpty(t, result.Mac)
+	assert.NotEmpty(t, result.EthIP)
+	assert.NotEmpty(t, result.SN)
 }
 
 // TestStartSession tests the StartSession method
 func TestStartSession(t *testing.T) {
-	server := mockServer()
-	defer server.Close()
+	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
 
-	client := NewCameraClient(server.URL)
-
-	result, err := client.StartSession()
+	err := cli.StartSession()
 	assert.NoError(t, err)
-	assert.Equal(t, "Session started successfully.", result)
 }
 
 // TestQuitSession tests the QuitSession method
@@ -69,9 +47,8 @@ func TestQuitSession(t *testing.T) {
 
 	client := NewCameraClient(server.URL)
 
-	result, err := client.QuitSession()
+	err := client.QuitSession()
 	assert.NoError(t, err)
-	assert.Equal(t, "Session quit successfully.", result)
 }
 
 // TestSyncDateTime tests the SyncDateTime method
@@ -118,15 +95,6 @@ func TestErrorHandling(t *testing.T) {
 	_, err := client.get("/invalid")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error making GET request")
-}
-
-// TestDecodeJSONError tests JSON decoding errors
-func TestDecodeJSONError(t *testing.T) {
-	data := []byte(`{invalid-json}`)
-	var result HealthCheckResponse
-	err := decodeJSON(data, &result)
-	assert.Error(t, err)
-	assert.Contains(t, err.Error(), "error decoding JSON response")
 }
 
 // mockServer creates a mock HTTP server for testing

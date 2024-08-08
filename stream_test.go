@@ -8,7 +8,7 @@ import (
 )
 
 func TestQueryStreamSetting(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 	is, err := cli.QueryStreamSetting(Stream1)
 	require.NoError(t, err)
 	fmt.Println(is)

@@ -8,13 +8,13 @@ import (
 )
 
 func TestClientListFolders(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 	_, err := cli.ListFolders()
 	require.NoError(t, err)
 }
 
 func TestClientListFiles(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 	files, err := cli.ListFiles("Z003")
 	require.NoError(t, err)
 	require.NotEqual(t, files, 0)
@@ -25,7 +25,7 @@ func TestClientListFiles(t *testing.T) {
 }
 
 func TestClienGetFileInfo(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 	folders, err := cli.GetFileInfo("Z003", "Z003C0002_20240808132826_0001.MOV")
 	require.NoError(t, err)
 	require.Equal(t, folders.Code, 0)

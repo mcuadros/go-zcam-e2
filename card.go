@@ -12,7 +12,7 @@ type cardManagementResponse struct {
 }
 
 // CheckCardPresence checks if a storage card is present in the camera
-func (c *CameraClient) CheckCardPresence() (bool, error) {
+func (c *Camera) CheckCardPresence() (bool, error) {
 	r, err := c.sendCardRequest("/ctrl/card?action=present")
 	if err != nil {
 		return false, err
@@ -22,7 +22,7 @@ func (c *CameraClient) CheckCardPresence() (bool, error) {
 }
 
 // FormatCard formats the storage card based on its capacity
-func (c *CameraClient) FormatCard() error {
+func (c *Camera) FormatCard() error {
 	r, err := c.sendCardRequest("/ctrl/card?action=format")
 	if err != nil {
 		return err
@@ -36,7 +36,7 @@ func (c *CameraClient) FormatCard() error {
 }
 
 // FormatCardAs formats the card specifically to either 'fat32' or 'exfat'
-func (c *CameraClient) FormatCardAs(fileSystem string) error {
+func (c *Camera) FormatCardAs(fileSystem string) error {
 	if fileSystem != "fat32" && fileSystem != "exfat" {
 		return fmt.Errorf("invalid file system type: %s", fileSystem)
 	}
@@ -54,17 +54,17 @@ func (c *CameraClient) FormatCardAs(fileSystem string) error {
 }
 
 // QueryCardFreeSpace queries the free space on the card
-func (c *CameraClient) QueryCardFreeSpace() (int, error) {
+func (c *Camera) QueryCardFreeSpace() (int, error) {
 	return c.queryCardSpace("query_free")
 
 }
 
 // QueryCardTotalSpace queries the total space on the card
-func (c *CameraClient) QueryCardTotalSpace() (int, error) {
+func (c *Camera) QueryCardTotalSpace() (int, error) {
 	return c.queryCardSpace("query_total")
 }
 
-func (c *CameraClient) queryCardSpace(action string) (int, error) {
+func (c *Camera) queryCardSpace(action string) (int, error) {
 	if action != "query_free" && action != "query_total" {
 		return -1, fmt.Errorf("invalid query action: %s", action)
 	}
@@ -78,7 +78,7 @@ func (c *CameraClient) queryCardSpace(action string) (int, error) {
 }
 
 // sendCardRequest sends a GET request to the card management endpoints and parses the response
-func (c *CameraClient) sendCardRequest(endpoint string) (*cardManagementResponse, error) {
+func (c *Camera) sendCardRequest(endpoint string) (*cardManagementResponse, error) {
 	body, err := c.get(endpoint)
 	if err != nil {
 		return nil, err

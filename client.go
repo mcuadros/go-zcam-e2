@@ -9,23 +9,23 @@ import (
 	"time"
 )
 
-// CameraClient is a struct that contains the base URL of the camera and an HTTP client
-type CameraClient struct {
-	BaseURL string
+// Camera is a struct that contains the base URL of the camera and an HTTP client
+type Camera struct {
+	baseURL string
 	Client  *http.Client
 }
 
 // NewCameraClient initializes and returns a CameraClient
-func NewCameraClient(baseURL string) *CameraClient {
-	return &CameraClient{
-		BaseURL: baseURL,
+func NewCameraClient(ip string) *Camera {
+	return &Camera{
+		baseURL: fmt.Sprintf("http://%s", ip),
 		Client:  &http.Client{},
 	}
 }
 
 // get performs a GET request to the given endpoint and returns the response body or an error
-func (c *CameraClient) get(endpoint string) ([]byte, error) {
-	url := fmt.Sprintf("%s%s", c.BaseURL, endpoint)
+func (c *Camera) get(endpoint string) ([]byte, error) {
+	url := fmt.Sprintf("%s%s", c.baseURL, endpoint)
 	resp, err := c.Client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request to %s: %w", url, err)
@@ -69,7 +69,7 @@ func decodeBasicRequest(data []byte) error {
 }
 
 // GetCameraInfo retrieves and returns the camera information
-func (c *CameraClient) GetCameraInfo() (*CameraInfo, error) {
+func (c *Camera) GetCameraInfo() (*CameraInfo, error) {
 	body, err := c.get("/info")
 	if err != nil {
 		return nil, err
@@ -83,7 +83,7 @@ func (c *CameraClient) GetCameraInfo() (*CameraInfo, error) {
 }
 
 // StartSession starts a control session with the camera
-func (c *CameraClient) StartSession() error {
+func (c *Camera) StartSession() error {
 	body, err := c.get("/ctrl/session")
 	if err != nil {
 		return err
@@ -93,7 +93,7 @@ func (c *CameraClient) StartSession() error {
 }
 
 // QuitSession ends the control session with the camera
-func (c *CameraClient) QuitSession() error {
+func (c *Camera) QuitSession() error {
 	body, err := c.get("/ctrl/session?action=quit")
 	if err != nil {
 		return err
@@ -103,7 +103,7 @@ func (c *CameraClient) QuitSession() error {
 }
 
 // SyncDateTime synchronizes the camera's date and time with the current system time
-func (c *CameraClient) SyncDateTime(dateTime time.Time) (string, error) {
+func (c *Camera) SyncDateTime(dateTime time.Time) (string, error) {
 	endpoint := fmt.Sprintf("/datetime?date=%s&time=%s", dateTime.Format("2006-01-02"), dateTime.Format("15:04:05"))
 	body, err := c.get(endpoint)
 	if err != nil {
@@ -114,7 +114,7 @@ func (c *CameraClient) SyncDateTime(dateTime time.Time) (string, error) {
 }
 
 // ShutdownSystem sends a shutdown command to the camera
-func (c *CameraClient) ShutdownSystem() (string, error) {
+func (c *Camera) ShutdownSystem() (string, error) {
 	body, err := c.get("/ctrl/shutdown")
 	if err != nil {
 		return "", err
@@ -124,7 +124,7 @@ func (c *CameraClient) ShutdownSystem() (string, error) {
 }
 
 // RebootSystem sends a reboot command to the camera
-func (c *CameraClient) RebootSystem() (string, error) {
+func (c *Camera) RebootSystem() (string, error) {
 	body, err := c.get("/ctrl/reboot")
 	if err != nil {
 		return "", err
@@ -150,7 +150,7 @@ const (
 )
 
 // ChangeWorkingMode switches the camera's working mode based on the provided constant
-func (c *CameraClient) ChangeWorkingMode(mode WorkingMode) (string, error) {
+func (c *Camera) ChangeWorkingMode(mode WorkingMode) (string, error) {
 	body, err := c.get(fmt.Sprintf("/ctrl/mode?action=%s", mode))
 	if err != nil {
 		return "", err
@@ -160,7 +160,7 @@ func (c *CameraClient) ChangeWorkingMode(mode WorkingMode) (string, error) {
 }
 
 // SetNetworkMode sets the camera's network mode, using net.IP and net.IPMask
-func (c *CameraClient) SetNetworkMode(mode NetworkMode, ipaddr net.IP, netmask net.IPMask, gateway net.IP) (*NetworkInfoResponse, error) {
+func (c *Camera) SetNetworkMode(mode NetworkMode, ipaddr net.IP, netmask net.IPMask, gateway net.IP) (*NetworkInfoResponse, error) {
 	var endpoint string
 	switch mode {
 	case NetworkModeRouter, NetworkModeDirect:

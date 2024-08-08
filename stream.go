@@ -39,13 +39,13 @@ const (
 )
 
 // SetStreamSource switches the stream source between internal options
-func (c *CameraClient) SetStreamSource(stream Stream) (*StreamSettingResponse, error) {
+func (c *Camera) SetStreamSource(stream Stream) (*StreamSettingResponse, error) {
 	endpoint := fmt.Sprintf("/ctrl/set?send_stream=%s", stream)
 	return c.sendStreamRequest(endpoint)
 }
 
 // SetStreamSettings adjusts multiple settings for a designated stream
-func (c *CameraClient) SetStreamSettings(stream Stream, settings map[Setting]string) (*StreamSettingResponse, error) {
+func (c *Camera) SetStreamSettings(stream Stream, settings map[Setting]string) (*StreamSettingResponse, error) {
 	if len(settings) == 0 {
 		return nil, fmt.Errorf("no settings provided")
 	}
@@ -62,13 +62,13 @@ func (c *CameraClient) SetStreamSettings(stream Stream, settings map[Setting]str
 }
 
 // QueryStreamSetting retrieves the current settings for a specific stream
-func (c *CameraClient) QueryStreamSetting(stream Stream) (*StreamSettingResponse, error) {
+func (c *Camera) QueryStreamSetting(stream Stream) (*StreamSettingResponse, error) {
 	endpoint := fmt.Sprintf("/ctrl/stream_setting?index=%s&action=query", stream)
 	return c.sendStreamRequest(endpoint)
 }
 
 // Helper function to send requests related to stream settings
-func (c *CameraClient) sendStreamRequest(endpoint string) (*StreamSettingResponse, error) {
+func (c *Camera) sendStreamRequest(endpoint string) (*StreamSettingResponse, error) {
 	body, err := c.get(endpoint)
 	if err != nil {
 		return nil, err

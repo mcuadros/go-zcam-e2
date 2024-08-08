@@ -1,7 +1,6 @@
 package zcam
 
 import (
-	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -18,7 +17,7 @@ func init() {
 }
 
 func TestGetCameraInfo(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 
 	result, err := cli.GetCameraInfo()
 	assert.NoError(t, err)
@@ -34,20 +33,15 @@ func TestGetCameraInfo(t *testing.T) {
 
 // TestStartSession tests the StartSession method
 func TestStartSession(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
-
+	cli := NewCameraClient(CameraIP)
 	err := cli.StartSession()
 	assert.NoError(t, err)
 }
 
 // TestQuitSession tests the QuitSession method
 func TestQuitSession(t *testing.T) {
-	server := mockServer()
-	defer server.Close()
-
-	client := NewCameraClient(server.URL)
-
-	err := client.QuitSession()
+	cli := NewCameraClient(CameraIP)
+	err := cli.QuitSession()
 	assert.NoError(t, err)
 }
 
@@ -56,7 +50,8 @@ func TestSyncDateTime(t *testing.T) {
 	server := mockServer()
 	defer server.Close()
 
-	client := NewCameraClient(server.URL)
+	client := NewCameraClient("")
+	client.baseURL = server.URL
 
 	result, err := client.SyncDateTime(time.Now())
 	assert.NoError(t, err)
@@ -68,7 +63,8 @@ func TestShutdownSystem(t *testing.T) {
 	server := mockServer()
 	defer server.Close()
 
-	client := NewCameraClient(server.URL)
+	client := NewCameraClient("")
+	client.baseURL = server.URL
 
 	result, err := client.ShutdownSystem()
 	assert.NoError(t, err)
@@ -80,7 +76,8 @@ func TestRebootSystem(t *testing.T) {
 	server := mockServer()
 	defer server.Close()
 
-	client := NewCameraClient(server.URL)
+	client := NewCameraClient("")
+	client.baseURL = server.URL
 
 	result, err := client.RebootSystem()
 	assert.NoError(t, err)
@@ -89,7 +86,8 @@ func TestRebootSystem(t *testing.T) {
 
 // TestErrorHandling tests error handling in the get method
 func TestErrorHandling(t *testing.T) {
-	client := NewCameraClient("http://invalid-url")
+	client := NewCameraClient("")
+	client.baseURL = "http://invalid-url"
 
 	// Expecting an error when trying to make a request to an invalid URL
 	_, err := client.get("/invalid")

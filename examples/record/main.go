@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"os"
 	"time"
@@ -10,8 +9,7 @@ import (
 )
 
 func main() {
-	CameraIP := os.Getenv("CAMERA_IP")
-	cli := zcam.NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := zcam.NewCameraClient(os.Getenv("CAMERA_IP"))
 
 	if err := cli.StartSession(); err != nil {
 		log.Fatalf("error starting session: %s", err)

@@ -1,14 +1,13 @@
 package zcam
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
 
 func TestQueryRemainingRecordingTime(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 
 	result, err := cli.QueryRemainingRecordingTime()
 	assert.NoError(t, err)
@@ -16,7 +15,7 @@ func TestQueryRemainingRecordingTime(t *testing.T) {
 }
 
 func TestGetSetting(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 
 	result, err := cli.GetSetting("record_file_format")
 	assert.NoError(t, err)
@@ -25,7 +24,7 @@ func TestGetSetting(t *testing.T) {
 }
 
 func TestSetSetting(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 
 	result, err := cli.GetSetting("record_file_format")
 	assert.NoError(t, err)
@@ -36,7 +35,7 @@ func TestSetSetting(t *testing.T) {
 }
 
 func TestTriggerAutoFocus(t *testing.T) {
-	cli := NewCameraClient(fmt.Sprintf("http://%s", CameraIP))
+	cli := NewCameraClient(CameraIP)
 
 	err := cli.TriggerAutoFocus()
 	assert.NoError(t, err)

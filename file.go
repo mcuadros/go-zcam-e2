@@ -16,7 +16,7 @@ var (
 )
 
 type File struct {
-	cli          *CameraClient
+	cli          *Camera
 	folder, file string
 	io.ReadCloser
 }
@@ -133,7 +133,7 @@ type FileInformation struct {
 }
 
 // ListFolders lists the folders in the DCIM directory
-func (c *CameraClient) ListFolders() ([]string, error) {
+func (c *Camera) ListFolders() ([]string, error) {
 	r, err := c.sendFileRequest("/DCIM/")
 	if err != nil {
 		return nil, err
@@ -143,7 +143,7 @@ func (c *CameraClient) ListFolders() ([]string, error) {
 }
 
 // ListFiles lists the files in a specific folder
-func (c *CameraClient) ListFiles(folder string) ([]*File, error) {
+func (c *Camera) ListFiles(folder string) ([]*File, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s", folder)
 	r, err := c.sendFileRequest(endpoint)
 	if err != nil {
@@ -159,7 +159,7 @@ func (c *CameraClient) ListFiles(folder string) ([]*File, error) {
 }
 
 // ListAllFiles lists the files in a all the folders
-func (c *CameraClient) ListAllFiles() ([]*File, error) {
+func (c *Camera) ListAllFiles() ([]*File, error) {
 	folders, err := c.ListFolders()
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving folders: %w", err)
@@ -179,43 +179,43 @@ func (c *CameraClient) ListAllFiles() ([]*File, error) {
 }
 
 // OpenFile downloads a specific file from a given folder.
-func (c *CameraClient) OpenFile(folder, filename string) (io.ReadCloser, error) {
+func (c *Camera) OpenFile(folder, filename string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s", folder, filename)
 	return c.getReader(endpoint)
 }
 
 // DeleteFile deletes a specific file from a given folder
-func (c *CameraClient) DeleteFile(folder, filename string) error {
+func (c *Camera) DeleteFile(folder, filename string) error {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=rm", folder, filename)
 	return c.sendControlRequest(endpoint)
 }
 
 // OpenThumbnail fetches the thumbnail of a video file
-func (c *CameraClient) OpenThumbnail(folder, filename string) (io.ReadCloser, error) {
+func (c *Camera) OpenThumbnail(folder, filename string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=thm", folder, filename)
 	return c.getReader(endpoint)
 }
 
 // OpenScreennail fetches a larger JPEG (screennail) of a video file
-func (c *CameraClient) OpenScreennail(folder, filename string) (io.ReadCloser, error) {
+func (c *Camera) OpenScreennail(folder, filename string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=scr", folder, filename)
 	return c.getReader(endpoint)
 }
 
 // GetFileCreationTime gets the creation time of a video file
-func (c *CameraClient) GetFileCreationTime(folder, filename string) (*FileInformation, error) {
+func (c *Camera) GetFileCreationTime(folder, filename string) (*FileInformation, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=ct", folder, filename)
 	return c.sendFileInfoRequest(endpoint)
 }
 
 // GetFileInfo fetches the video file information including dimensions and duration
-func (c *CameraClient) GetFileInfo(folder, filename string) (*FileInformation, error) {
+func (c *Camera) GetFileInfo(folder, filename string) (*FileInformation, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=info", folder, filename)
 	return c.sendFileInfoRequest(endpoint)
 }
 
-func (c *CameraClient) getReader(endpoint string) (io.ReadCloser, error) {
-	url := fmt.Sprintf("%s%s", c.BaseURL, endpoint)
+func (c *Camera) getReader(endpoint string) (io.ReadCloser, error) {
+	url := fmt.Sprintf("%s%s", c.baseURL, endpoint)
 	resp, err := c.Client.Get(url)
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request to %s: %w", url, err)
@@ -228,7 +228,7 @@ func (c *CameraClient) getReader(endpoint string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func (c *CameraClient) sendFileRequest(endpoint string) (*fileListResponse, error) {
+func (c *Camera) sendFileRequest(endpoint string) (*fileListResponse, error) {
 	body, err := c.get(endpoint)
 	if err != nil {
 		return nil, err
@@ -246,7 +246,7 @@ func (c *CameraClient) sendFileRequest(endpoint string) (*fileListResponse, erro
 	return &r, nil
 }
 
-func (c *CameraClient) sendFileInfoRequest(endpoint string) (*FileInformation, error) {
+func (c *Camera) sendFileInfoRequest(endpoint string) (*FileInformation, error) {
 	body, err := c.get(endpoint)
 	if err != nil {
 		return nil, err

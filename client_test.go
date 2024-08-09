@@ -1,6 +1,7 @@
 package zcam
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"os"
@@ -19,7 +20,7 @@ func init() {
 func TestGetCameraInfo(t *testing.T) {
 	cli := NewCameraClient(CameraIP)
 
-	result, err := cli.GetCameraInfo()
+	result, err := cli.GetCameraInfo(context.Background())
 	assert.NoError(t, err)
 	assert.NotNil(t, result)
 	assert.NotEmpty(t, result.Model)
@@ -34,14 +35,14 @@ func TestGetCameraInfo(t *testing.T) {
 // TestStartSession tests the StartSession method
 func TestStartSession(t *testing.T) {
 	cli := NewCameraClient(CameraIP)
-	err := cli.StartSession()
+	err := cli.StartSession(context.Background())
 	assert.NoError(t, err)
 }
 
 // TestQuitSession tests the QuitSession method
 func TestQuitSession(t *testing.T) {
 	cli := NewCameraClient(CameraIP)
-	err := cli.QuitSession()
+	err := cli.QuitSession(context.Background())
 	assert.NoError(t, err)
 }
 
@@ -53,7 +54,7 @@ func TestSyncDateTime(t *testing.T) {
 	client := NewCameraClient("")
 	client.baseURL = server.URL
 
-	result, err := client.SyncDateTime(time.Now())
+	result, err := client.SyncDateTime(context.Background(), time.Now())
 	assert.NoError(t, err)
 	assert.Equal(t, "Date/Time synced successfully.", result)
 }
@@ -66,7 +67,7 @@ func TestShutdownSystem(t *testing.T) {
 	client := NewCameraClient("")
 	client.baseURL = server.URL
 
-	result, err := client.ShutdownSystem()
+	result, err := client.ShutdownSystem(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "System shutdown successfully.", result)
 }
@@ -79,7 +80,7 @@ func TestRebootSystem(t *testing.T) {
 	client := NewCameraClient("")
 	client.baseURL = server.URL
 
-	result, err := client.RebootSystem()
+	result, err := client.RebootSystem(context.Background())
 	assert.NoError(t, err)
 	assert.Equal(t, "System rebooted successfully.", result)
 }
@@ -90,7 +91,7 @@ func TestErrorHandling(t *testing.T) {
 	client.baseURL = "http://invalid-url"
 
 	// Expecting an error when trying to make a request to an invalid URL
-	_, err := client.get("/invalid")
+	_, err := client.get(context.Background(), "/invalid")
 	assert.Error(t, err)
 	assert.Contains(t, err.Error(), "error making GET request")
 }

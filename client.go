@@ -1,6 +1,7 @@
 package zcam
 
 import (
+	"context"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -24,9 +25,14 @@ func NewCameraClient(ip string) *Camera {
 }
 
 // get performs a GET request to the given endpoint and returns the response body or an error
-func (c *Camera) get(endpoint string) ([]byte, error) {
+func (c *Camera) get(ctx context.Context, endpoint string) ([]byte, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, endpoint)
-	resp, err := c.Client.Get(url)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create GET request: %w", err)
+	}
+
+	resp, err := c.Client.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request to %s: %w", url, err)
 	}
@@ -69,8 +75,8 @@ func decodeBasicRequest(data []byte) error {
 }
 
 // GetCameraInfo retrieves and returns the camera information
-func (c *Camera) GetCameraInfo() (*CameraInfo, error) {
-	body, err := c.get("/info")
+func (c *Camera) GetCameraInfo(ctx context.Context) (*CameraInfo, error) {
+	body, err := c.get(ctx, "/info")
 	if err != nil {
 		return nil, err
 	}
@@ -83,8 +89,8 @@ func (c *Camera) GetCameraInfo() (*CameraInfo, error) {
 }
 
 // StartSession starts a control session with the camera
-func (c *Camera) StartSession() error {
-	body, err := c.get("/ctrl/session")
+func (c *Camera) StartSession(ctx context.Context) error {
+	body, err := c.get(ctx, "/ctrl/session")
 	if err != nil {
 		return err
 	}
@@ -93,8 +99,8 @@ func (c *Camera) StartSession() error {
 }
 
 // QuitSession ends the control session with the camera
-func (c *Camera) QuitSession() error {
-	body, err := c.get("/ctrl/session?action=quit")
+func (c *Camera) QuitSession(ctx context.Context) error {
+	body, err := c.get(ctx, "/ctrl/session?action=quit")
 	if err != nil {
 		return err
 	}
@@ -103,9 +109,9 @@ func (c *Camera) QuitSession() error {
 }
 
 // SyncDateTime synchronizes the camera's date and time with the current system time
-func (c *Camera) SyncDateTime(dateTime time.Time) (string, error) {
+func (c *Camera) SyncDateTime(ctx context.Context, dateTime time.Time) (string, error) {
 	endpoint := fmt.Sprintf("/datetime?date=%s&time=%s", dateTime.Format("2006-01-02"), dateTime.Format("15:04:05"))
-	body, err := c.get(endpoint)
+	body, err := c.get(ctx, endpoint)
 	if err != nil {
 		return "", err
 	}
@@ -114,8 +120,8 @@ func (c *Camera) SyncDateTime(dateTime time.Time) (string, error) {
 }
 
 // ShutdownSystem sends a shutdown command to the camera
-func (c *Camera) ShutdownSystem() (string, error) {
-	body, err := c.get("/ctrl/shutdown")
+func (c *Camera) ShutdownSystem(ctx context.Context) (string, error) {
+	body, err := c.get(ctx, "/ctrl/shutdown")
 	if err != nil {
 		return "", err
 	}
@@ -124,8 +130,8 @@ func (c *Camera) ShutdownSystem() (string, error) {
 }
 
 // RebootSystem sends a reboot command to the camera
-func (c *Camera) RebootSystem() (string, error) {
-	body, err := c.get("/ctrl/reboot")
+func (c *Camera) RebootSystem(ctx context.Context) (string, error) {
+	body, err := c.get(ctx, "/ctrl/reboot")
 	if err != nil {
 		return "", err
 	}
@@ -150,8 +156,8 @@ const (
 )
 
 // ChangeWorkingMode switches the camera's working mode based on the provided constant
-func (c *Camera) ChangeWorkingMode(mode WorkingMode) (string, error) {
-	body, err := c.get(fmt.Sprintf("/ctrl/mode?action=%s", mode))
+func (c *Camera) ChangeWorkingMode(ctx context.Context, mode WorkingMode) (string, error) {
+	body, err := c.get(ctx, fmt.Sprintf("/ctrl/mode?action=%s", mode))
 	if err != nil {
 		return "", err
 	}
@@ -160,7 +166,7 @@ func (c *Camera) ChangeWorkingMode(mode WorkingMode) (string, error) {
 }
 
 // SetNetworkMode sets the camera's network mode, using net.IP and net.IPMask
-func (c *Camera) SetNetworkMode(mode NetworkMode, ipaddr net.IP, netmask net.IPMask, gateway net.IP) (*NetworkInfoResponse, error) {
+func (c *Camera) SetNetworkMode(ctx context.Context, mode NetworkMode, ipaddr net.IP, netmask net.IPMask, gateway net.IP) (*NetworkInfoResponse, error) {
 	var endpoint string
 	switch mode {
 	case NetworkModeRouter, NetworkModeDirect:
@@ -177,7 +183,7 @@ func (c *Camera) SetNetworkMode(mode NetworkMode, ipaddr net.IP, netmask net.IPM
 		return nil, fmt.Errorf("invalid network mode")
 	}
 
-	body, err := c.get(endpoint)
+	body, err := c.get(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}

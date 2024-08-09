@@ -1,6 +1,7 @@
 package zcam
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -40,15 +41,15 @@ func (f *File) Filename() string {
 	return f.file
 }
 
-func (f *File) Open(format Format) error {
+func (f *File) Open(ctx context.Context, format Format) error {
 	var err error
 	switch format {
 	case Original:
-		f.ReadCloser, err = f.cli.OpenFile(f.folder, f.file)
+		f.ReadCloser, err = f.cli.OpenFile(ctx, f.folder, f.file)
 	case Thumbnail:
-		f.ReadCloser, err = f.cli.OpenThumbnail(f.folder, f.file)
+		f.ReadCloser, err = f.cli.OpenThumbnail(ctx, f.folder, f.file)
 	case Screennail:
-		f.ReadCloser, err = f.cli.OpenScreennail(f.folder, f.file)
+		f.ReadCloser, err = f.cli.OpenScreennail(ctx, f.folder, f.file)
 	default:
 		return ErrUnknownFormat
 	}
@@ -72,12 +73,12 @@ func (f *File) Close() error {
 	return nil
 }
 
-func (f *File) Info() (*FileInformation, error) {
-	return f.cli.GetFileInfo(f.folder, f.file)
+func (f *File) Info(ctx context.Context) (*FileInformation, error) {
+	return f.cli.GetFileInfo(ctx, f.folder, f.file)
 }
 
-func (f *File) CreatedAt() (time.Time, error) {
-	info, err := f.cli.GetFileCreationTime(f.folder, f.file)
+func (f *File) CreatedAt(ctx context.Context) (time.Time, error) {
+	info, err := f.cli.GetFileCreationTime(ctx, f.folder, f.file)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -90,15 +91,15 @@ func (f *File) CreatedAt() (time.Time, error) {
 	return time.Unix(int64(unix), 0), nil
 }
 
-func (f *File) Delete() error {
+func (f *File) Delete(ctx context.Context) error {
 	defer f.Close()
-	return f.cli.DeleteFile(f.folder, f.file)
+	return f.cli.DeleteFile(ctx, f.folder, f.file)
 }
 
 // Download copy the camera file to a local file, return the downloaded bytes.
 // It opens and close this File,
-func (f *File) Download(format Format, filename string) (int64, error) {
-	if err := f.Open(format); err != nil {
+func (f *File) Download(ctx context.Context, format Format, filename string) (int64, error) {
+	if err := f.Open(ctx, format); err != nil {
 		return -1, fmt.Errorf("unable to open file %q in folder %q: %w", f.file, f.folder, err)
 	}
 
@@ -133,8 +134,8 @@ type FileInformation struct {
 }
 
 // ListFolders lists the folders in the DCIM directory
-func (c *Camera) ListFolders() ([]string, error) {
-	r, err := c.sendFileRequest("/DCIM/")
+func (c *Camera) ListFolders(ctx context.Context) ([]string, error) {
+	r, err := c.sendFileRequest(ctx, "/DCIM/")
 	if err != nil {
 		return nil, err
 	}
@@ -143,9 +144,9 @@ func (c *Camera) ListFolders() ([]string, error) {
 }
 
 // ListFiles lists the files in a specific folder
-func (c *Camera) ListFiles(folder string) ([]*File, error) {
+func (c *Camera) ListFiles(ctx context.Context, folder string) ([]*File, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s", folder)
-	r, err := c.sendFileRequest(endpoint)
+	r, err := c.sendFileRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -159,15 +160,15 @@ func (c *Camera) ListFiles(folder string) ([]*File, error) {
 }
 
 // ListAllFiles lists the files in a all the folders
-func (c *Camera) ListAllFiles() ([]*File, error) {
-	folders, err := c.ListFolders()
+func (c *Camera) ListAllFiles(ctx context.Context) ([]*File, error) {
+	folders, err := c.ListFolders(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("error retrieving folders: %w", err)
 	}
 
 	var files []*File
 	for _, folder := range folders {
-		f, err := c.ListFiles(folder)
+		f, err := c.ListFiles(ctx, folder)
 		if err != nil {
 			return nil, fmt.Errorf("error retrieving files from folder %s: %w", folder, err)
 		}
@@ -179,44 +180,49 @@ func (c *Camera) ListAllFiles() ([]*File, error) {
 }
 
 // OpenFile downloads a specific file from a given folder.
-func (c *Camera) OpenFile(folder, filename string) (io.ReadCloser, error) {
+func (c *Camera) OpenFile(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s", folder, filename)
-	return c.getReader(endpoint)
+	return c.getReader(ctx, endpoint)
 }
 
 // DeleteFile deletes a specific file from a given folder
-func (c *Camera) DeleteFile(folder, filename string) error {
+func (c *Camera) DeleteFile(ctx context.Context, folder, filename string) error {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=rm", folder, filename)
-	return c.sendControlRequest(endpoint)
+	return c.sendControlRequest(ctx, endpoint)
 }
 
 // OpenThumbnail fetches the thumbnail of a video file
-func (c *Camera) OpenThumbnail(folder, filename string) (io.ReadCloser, error) {
+func (c *Camera) OpenThumbnail(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=thm", folder, filename)
-	return c.getReader(endpoint)
+	return c.getReader(ctx, endpoint)
 }
 
 // OpenScreennail fetches a larger JPEG (screennail) of a video file
-func (c *Camera) OpenScreennail(folder, filename string) (io.ReadCloser, error) {
+func (c *Camera) OpenScreennail(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=scr", folder, filename)
-	return c.getReader(endpoint)
+	return c.getReader(ctx, endpoint)
 }
 
 // GetFileCreationTime gets the creation time of a video file
-func (c *Camera) GetFileCreationTime(folder, filename string) (*FileInformation, error) {
+func (c *Camera) GetFileCreationTime(ctx context.Context, folder, filename string) (*FileInformation, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=ct", folder, filename)
-	return c.sendFileInfoRequest(endpoint)
+	return c.sendFileInfoRequest(ctx, endpoint)
 }
 
 // GetFileInfo fetches the video file information including dimensions and duration
-func (c *Camera) GetFileInfo(folder, filename string) (*FileInformation, error) {
+func (c *Camera) GetFileInfo(ctx context.Context, folder, filename string) (*FileInformation, error) {
 	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=info", folder, filename)
-	return c.sendFileInfoRequest(endpoint)
+	return c.sendFileInfoRequest(ctx, endpoint)
 }
 
-func (c *Camera) getReader(endpoint string) (io.ReadCloser, error) {
+func (c *Camera) getReader(ctx context.Context, endpoint string) (io.ReadCloser, error) {
 	url := fmt.Sprintf("%s%s", c.baseURL, endpoint)
-	resp, err := c.Client.Get(url)
+	request, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+	if err != nil {
+		return nil, fmt.Errorf("unable to create GET request: %w", err)
+	}
+
+	resp, err := c.Client.Do(request)
 	if err != nil {
 		return nil, fmt.Errorf("error making GET request to %s: %w", url, err)
 	}
@@ -228,8 +234,8 @@ func (c *Camera) getReader(endpoint string) (io.ReadCloser, error) {
 	return resp.Body, nil
 }
 
-func (c *Camera) sendFileRequest(endpoint string) (*fileListResponse, error) {
-	body, err := c.get(endpoint)
+func (c *Camera) sendFileRequest(ctx context.Context, endpoint string) (*fileListResponse, error) {
+	body, err := c.get(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
@@ -246,8 +252,8 @@ func (c *Camera) sendFileRequest(endpoint string) (*fileListResponse, error) {
 	return &r, nil
 }
 
-func (c *Camera) sendFileInfoRequest(endpoint string) (*FileInformation, error) {
-	body, err := c.get(endpoint)
+func (c *Camera) sendFileInfoRequest(ctx context.Context, endpoint string) (*FileInformation, error) {
+	body, err := c.get(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}

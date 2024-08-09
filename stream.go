@@ -1,6 +1,7 @@
 package zcam
 
 import (
+	"context"
 	"fmt"
 	"strings"
 )
@@ -39,13 +40,13 @@ const (
 )
 
 // SetStreamSource switches the stream source between internal options
-func (c *Camera) SetStreamSource(stream Stream) (*StreamSettingResponse, error) {
+func (c *Camera) SetStreamSource(ctx context.Context, stream Stream) (*StreamSettingResponse, error) {
 	endpoint := fmt.Sprintf("/ctrl/set?send_stream=%s", stream)
-	return c.sendStreamRequest(endpoint)
+	return c.sendStreamRequest(ctx, endpoint)
 }
 
 // SetStreamSettings adjusts multiple settings for a designated stream
-func (c *Camera) SetStreamSettings(stream Stream, settings map[Setting]string) (*StreamSettingResponse, error) {
+func (c *Camera) SetStreamSettings(ctx context.Context, stream Stream, settings map[Setting]string) (*StreamSettingResponse, error) {
 	if len(settings) == 0 {
 		return nil, fmt.Errorf("no settings provided")
 	}
@@ -58,18 +59,18 @@ func (c *Camera) SetStreamSettings(stream Stream, settings map[Setting]string) (
 	settingParams := strings.Join(params, "&")
 	endpoint := fmt.Sprintf("/ctrl/stream_setting?index=%s&%s", stream, settingParams)
 
-	return c.sendStreamRequest(endpoint)
+	return c.sendStreamRequest(ctx, endpoint)
 }
 
 // QueryStreamSetting retrieves the current settings for a specific stream
-func (c *Camera) QueryStreamSetting(stream Stream) (*StreamSettingResponse, error) {
+func (c *Camera) QueryStreamSetting(ctx context.Context, stream Stream) (*StreamSettingResponse, error) {
 	endpoint := fmt.Sprintf("/ctrl/stream_setting?index=%s&action=query", stream)
-	return c.sendStreamRequest(endpoint)
+	return c.sendStreamRequest(ctx, endpoint)
 }
 
 // Helper function to send requests related to stream settings
-func (c *Camera) sendStreamRequest(endpoint string) (*StreamSettingResponse, error) {
-	body, err := c.get(endpoint)
+func (c *Camera) sendStreamRequest(ctx context.Context, endpoint string) (*StreamSettingResponse, error) {
+	body, err := c.get(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}

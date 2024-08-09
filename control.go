@@ -1,8 +1,10 @@
 package zcam
 
 import (
+	"context"
 	"fmt"
 	"strconv"
+	"time"
 )
 
 type CameraSetting struct {
@@ -36,6 +38,55 @@ func (c *Camera) StopVideoRecord() error {
 	}
 
 	return decodeBasicRequest(body)
+}
+
+// VideoRecord records a video of the give duration, it list the files before
+// start to recording and after stop the recording and returns the result.
+func (c *Camera) VideoRecord(ctx context.Context, d time.Duration) (*File, error) {
+	before, err := c.ListAllFiles()
+	if err != nil {
+		return nil, fmt.Errorf("unable to list files: %w", err)
+	}
+
+	select {
+	case <-ctx.Done():
+		if err := c.StopVideoRecord(); err != nil {
+			return nil, fmt.Errorf("error stopping video, at cacelled context: %w", err)
+		}
+
+		return nil, fmt.Errorf("context cancelled")
+	case <-time.After(d):
+		if err := c.StopVideoRecord(); err != nil {
+			return nil, fmt.Errorf("error stopping video: %w", err)
+		}
+	}
+
+	after, err := c.ListAllFiles()
+	if err != nil {
+		return nil, fmt.Errorf("unable to list files (after record): %w", err)
+	}
+
+	f := compareFileList(before, after)
+	if f == nil {
+		return nil, fmt.Errorf("record finished but no new files where found")
+	}
+
+	return f, nil
+}
+
+func compareFileList(a, b []*File) *File {
+	seen := map[string]bool{}
+	for _, f := range a {
+		seen[f.Folder()+f.Filename()] = true
+	}
+
+	for _, f := range b {
+		if !seen[f.Folder()+f.Filename()] {
+			return f
+		}
+	}
+
+	return nil
 }
 
 // QueryRemainingRecordingTime queries the remaining recording time in minutes

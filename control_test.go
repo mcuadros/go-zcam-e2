@@ -56,3 +56,11 @@ func TestSetSetting(t *testing.T) {
 	err = cli.SetSetting(context.Background(), "record_file_format", result.Value.(string))
 	assert.NoError(t, err)
 }
+
+func TestQueryTemperature(t *testing.T) {
+	cli := NewCamera(CameraIP)
+
+	result, err := cli.QueryTemperature(context.Background())
+	assert.NoError(t, err)
+	assert.NotEqual(t, result, 0)
+}

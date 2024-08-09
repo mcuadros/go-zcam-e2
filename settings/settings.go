@@ -203,6 +203,9 @@ const (
 	WiFiSetting Setting = "wifi"
 	// BatterySetting shows the battery percentage (type: range).
 	BatterySetting Setting = "battery"
+	// BatterySetting shows the battery voltage, the value need to divided by 10
+	// to get the value in volts (type: range).
+	BatteryVoltage Setting = "battery_voltage"
 	// LEDSetting turns the LED on or off (type: choice).
 	LEDSetting Setting = "led"
 	// LCDBacklightSetting sets the LCD backlight level (type: range).

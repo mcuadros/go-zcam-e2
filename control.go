@@ -170,6 +170,24 @@ func (c *Camera) QueryRemainingRecordingTime(ctx context.Context) (time.Duration
 	return time.Minute * time.Duration(mins), nil
 }
 
+// QueryTemperature queries the camera temperature in celsius.
+func (c *Camera) QueryTemperature(ctx context.Context) (int, error) {
+	body, err := c.get(ctx, "/ctrl/temperature")
+	if err != nil {
+		return -1, err
+	}
+
+	var r struct {
+		Code int    `json:"code"`
+		Msg  string `json:"msg"`
+	}
+	if err := decodeJSON(body, &r); err != nil {
+		return -1, err
+	}
+
+	return strconv.Atoi(r.Msg)
+}
+
 // GetSetting retrieves a camera setting based on its key
 func (c *Camera) GetSetting(ctx context.Context, key settings.Setting) (*SettingValue, error) {
 	endpoint := fmt.Sprintf("/ctrl/get?k=%s", key)

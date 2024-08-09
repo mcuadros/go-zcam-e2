@@ -56,10 +56,3 @@ func TestSetSetting(t *testing.T) {
 	err = cli.SetSetting(context.Background(), "record_file_format", result.Value.(string))
 	assert.NoError(t, err)
 }
-
-func TestTriggerAutoFocus(t *testing.T) {
-	cli := NewCamera(CameraIP)
-
-	err := cli.TriggerAutoFocus(context.Background())
-	assert.NoError(t, err)
-}

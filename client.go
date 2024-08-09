@@ -120,34 +120,34 @@ func (c *Camera) QuitSession(ctx context.Context) error {
 }
 
 // SyncDateTime synchronizes the camera's date and time with the current system time
-func (c *Camera) SyncDateTime(ctx context.Context, dateTime time.Time) (string, error) {
+func (c *Camera) SyncDateTime(ctx context.Context, dateTime time.Time) error {
 	endpoint := fmt.Sprintf("/datetime?date=%s&time=%s", dateTime.Format("2006-01-02"), dateTime.Format("15:04:05"))
 	body, err := c.get(ctx, endpoint)
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(body), nil
+	return decodeBasicRequest(body)
 }
 
 // ShutdownSystem sends a shutdown command to the camera
-func (c *Camera) ShutdownSystem(ctx context.Context) (string, error) {
+func (c *Camera) ShutdownSystem(ctx context.Context) error {
 	body, err := c.get(ctx, "/ctrl/shutdown")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(body), nil
+	return decodeBasicRequest(body)
 }
 
 // RebootSystem sends a reboot command to the camera
-func (c *Camera) RebootSystem(ctx context.Context) (string, error) {
+func (c *Camera) RebootSystem(ctx context.Context) error {
 	body, err := c.get(ctx, "/ctrl/reboot")
 	if err != nil {
-		return "", err
+		return err
 	}
 
-	return string(body), nil
+	return decodeBasicRequest(body)
 }
 
 type WorkingMode string
@@ -175,6 +175,26 @@ func (c *Camera) ChangeWorkingMode(ctx context.Context, mode WorkingMode) (strin
 
 	return string(body), nil
 }
+
+// NetworkInfoResponse and NetworkConfigResponse to parse responses from network queries
+type NetworkInfoResponse struct {
+	Code    int    `json:"code"`
+	Desc    string `json:"desc"`
+	Mode    string `json:"mode"`
+	IP      string `json:"ip,omitempty"`
+	Netmask string `json:"netmask,omitempty"`
+	Gateway string `json:"gateway,omitempty"`
+}
+
+// NetworkMode defines a type for different network modes
+type NetworkMode string
+
+// Constants for network modes
+const (
+	NetworkModeRouter NetworkMode = "Router"
+	NetworkModeDirect NetworkMode = "Direct"
+	NetworkModeStatic NetworkMode = "Static"
+)
 
 // SetNetworkMode sets the camera's network mode, using net.IP and net.IPMask
 func (c *Camera) SetNetworkMode(ctx context.Context, mode NetworkMode, ipaddr net.IP, netmask net.IPMask, gateway net.IP) (*NetworkInfoResponse, error) {

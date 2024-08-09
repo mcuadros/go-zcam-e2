@@ -31,7 +31,7 @@ const (
 )
 
 type File struct {
-	cli          *Camera
+	c            *Camera
 	folder, file string
 	io.ReadCloser
 }
@@ -54,7 +54,7 @@ func NewFile(c *Camera, path string) (*File, error) {
 		return nil, fmt.Errorf("unexpected filename %s", path)
 	}
 
-	return &File{cli: c, folder: parts[0], file: parts[1]}, nil
+	return &File{c: c, folder: parts[0], file: parts[1]}, nil
 }
 
 func (f *File) Folder() string {
@@ -69,11 +69,11 @@ func (f *File) Open(ctx context.Context, format Format) error {
 	var err error
 	switch format {
 	case Original:
-		f.ReadCloser, err = f.cli.OpenFile(ctx, f.folder, f.file)
+		f.ReadCloser, err = f.c.OpenFile(ctx, f.folder, f.file)
 	case Thumbnail:
-		f.ReadCloser, err = f.cli.OpenThumbnail(ctx, f.folder, f.file)
+		f.ReadCloser, err = f.c.OpenThumbnail(ctx, f.folder, f.file)
 	case Screennail:
-		f.ReadCloser, err = f.cli.OpenScreennail(ctx, f.folder, f.file)
+		f.ReadCloser, err = f.c.OpenScreennail(ctx, f.folder, f.file)
 	default:
 		return ErrUnknownFormat
 	}
@@ -98,11 +98,11 @@ func (f *File) Close() error {
 }
 
 func (f *File) Info(ctx context.Context) (*FileInformation, error) {
-	return f.cli.GetFileInfo(ctx, f.folder, f.file)
+	return f.c.GetFileInfo(ctx, f.folder, f.file)
 }
 
 func (f *File) CreatedAt(ctx context.Context) (time.Time, error) {
-	info, err := f.cli.GetFileCreationTime(ctx, f.folder, f.file)
+	info, err := f.c.GetFileCreationTime(ctx, f.folder, f.file)
 	if err != nil {
 		return time.Time{}, err
 	}
@@ -117,7 +117,7 @@ func (f *File) CreatedAt(ctx context.Context) (time.Time, error) {
 
 func (f *File) Delete(ctx context.Context) error {
 	defer f.Close()
-	return f.cli.DeleteFile(ctx, f.folder, f.file)
+	return f.c.DeleteFile(ctx, f.folder, f.file)
 }
 
 // Download copy the camera file to a local file, return the downloaded bytes.
@@ -177,7 +177,7 @@ func (c *Camera) ListFiles(ctx context.Context, folder string) ([]*File, error) 
 
 	var files []*File
 	for _, f := range r.Files {
-		files = append(files, &File{cli: c, folder: folder, file: f})
+		files = append(files, &File{c: c, folder: folder, file: f})
 	}
 
 	return files, err

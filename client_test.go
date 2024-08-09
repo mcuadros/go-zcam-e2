@@ -48,15 +48,9 @@ func TestQuitSession(t *testing.T) {
 
 // TestSyncDateTime tests the SyncDateTime method
 func TestSyncDateTime(t *testing.T) {
-	server := mockServer()
-	defer server.Close()
-
-	client := NewCamera("")
-	client.baseURL = server.URL
-
-	result, err := client.SyncDateTime(context.Background(), time.Now())
+	cli := NewCamera(CameraIP)
+	err := cli.SyncDateTime(context.Background(), time.Now())
 	assert.NoError(t, err)
-	assert.Equal(t, "Date/Time synced successfully.", result)
 }
 
 // TestShutdownSystem tests the ShutdownSystem method
@@ -67,9 +61,8 @@ func TestShutdownSystem(t *testing.T) {
 	client := NewCamera("")
 	client.baseURL = server.URL
 
-	result, err := client.ShutdownSystem(context.Background())
+	err := client.ShutdownSystem(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, "System shutdown successfully.", result)
 }
 
 // TestRebootSystem tests the RebootSystem method
@@ -80,9 +73,8 @@ func TestRebootSystem(t *testing.T) {
 	client := NewCamera("")
 	client.baseURL = server.URL
 
-	result, err := client.RebootSystem(context.Background())
+	err := client.RebootSystem(context.Background())
 	assert.NoError(t, err)
-	assert.Equal(t, "System rebooted successfully.", result)
 }
 
 // TestErrorHandling tests error handling in the get method
@@ -125,10 +117,10 @@ func mockServer() *httptest.Server {
 			w.Write([]byte("Date/Time synced successfully."))
 		case "/ctrl/shutdown":
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("System shutdown successfully."))
+			w.Write([]byte(`{"code": 0, "desc": "demo", "msg": "OK"}`))
 		case "/ctrl/reboot":
 			w.WriteHeader(http.StatusOK)
-			w.Write([]byte("System rebooted successfully."))
+			w.Write([]byte(`{"code": 0, "desc": "demo", "msg": "OK"}`))
 		default:
 			w.WriteHeader(http.StatusNotFound)
 		}

@@ -10,15 +10,16 @@ type Stream string
 type Setting string
 
 const (
+	// Stream0 by default, it's used as the file recording in stroage card.
+	// The resolution and fps is controlled by 'movfmt' and 'movvfr'. The
+	// encoder is set by 'video_encoder' in /ctrl/set interface.
 	Stream0 Stream = "stream0"
+	// Stream1 by default, it's used by the network streaming. The resolution
+	// is limited by the stream 0, it can NOT be larger than the stream 0.
+	// By default, the fps is 25 or 30, the encoder is H.264. The maxinum
+	// resolution and fps is 4KP30.
 	Stream1 Stream = "stream1"
 )
-
-type StreamSettingResponse struct {
-	Code int    `json:"code"`
-	Desc string `json:"desc"`
-	Msg  string `json:"msg"`
-}
 
 const (
 	//StreamSetting stream0/stream1
@@ -40,15 +41,15 @@ const (
 )
 
 // SetStreamSource switches the stream source between internal options
-func (c *Camera) SetStreamSource(ctx context.Context, stream Stream) (*StreamSettingResponse, error) {
+func (c *Camera) SetStreamSource(ctx context.Context, stream Stream) error {
 	endpoint := fmt.Sprintf("/ctrl/set?send_stream=%s", stream)
 	return c.sendStreamRequest(ctx, endpoint)
 }
 
 // SetStreamSettings adjusts multiple settings for a designated stream
-func (c *Camera) SetStreamSettings(ctx context.Context, stream Stream, settings map[Setting]string) (*StreamSettingResponse, error) {
+func (c *Camera) SetStreamSettings(ctx context.Context, stream Stream, settings map[Setting]string) error {
 	if len(settings) == 0 {
-		return nil, fmt.Errorf("no settings provided")
+		return fmt.Errorf("no settings provided")
 	}
 
 	// Construct query parameters from the settings map
@@ -62,22 +63,44 @@ func (c *Camera) SetStreamSettings(ctx context.Context, stream Stream, settings 
 	return c.sendStreamRequest(ctx, endpoint)
 }
 
-// QueryStreamSetting retrieves the current settings for a specific stream
-func (c *Camera) QueryStreamSetting(ctx context.Context, stream Stream) (*StreamSettingResponse, error) {
-	endpoint := fmt.Sprintf("/ctrl/stream_setting?index=%s&action=query", stream)
-	return c.sendStreamRequest(ctx, endpoint)
+type StreamConfig struct {
+	Stream        Stream `json:"streamIndex"`
+	EncoderType   string `json:"encoderType"`
+	Bitwidth      string `json:"bitwidth"`
+	Width         int    `json:"width"`
+	Height        int    `json:"height"`
+	FPS           int    `json:"fps"`
+	SampleUnit    int    `json:"sample_unit"`
+	Bitrate       int    `json:"bitrate"`
+	GopN          int    `json:"gop_n"`
+	Rotation      int    `json:"rotation"`
+	SplitDuration int    `json:"splitDuration"`
+	Status        string `json:"status"`
 }
 
-// Helper function to send requests related to stream settings
-func (c *Camera) sendStreamRequest(ctx context.Context, endpoint string) (*StreamSettingResponse, error) {
+// QueryStreamSetting retrieves the current settings for a specific stream
+func (c *Camera) QueryStreamSetting(ctx context.Context, stream Stream) (*StreamConfig, error) {
+	endpoint := fmt.Sprintf("/ctrl/stream_setting?index=%s&action=query", stream)
 	body, err := c.get(ctx, endpoint)
 	if err != nil {
 		return nil, err
 	}
 
-	var response StreamSettingResponse
-	if err := decodeJSON(body, &response); err != nil {
+	var r StreamConfig
+	if err := decodeJSON(body, &r); err != nil {
 		return nil, err
 	}
-	return &response, nil
+
+	return &r, nil
+}
+
+// Helper function to send requests related to stream settings
+func (c *Camera) sendStreamRequest(ctx context.Context, endpoint string) error {
+	body, err := c.get(ctx, endpoint)
+	if err != nil {
+		return err
+	}
+
+	fmt.Println(string(body))
+	return decodeBasicRequest(body)
 }

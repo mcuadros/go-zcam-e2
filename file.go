@@ -8,6 +8,7 @@ import (
 	"net/http"
 	"os"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -16,11 +17,7 @@ var (
 	ErrUnknownFormat = errors.New("unknown format")
 )
 
-type File struct {
-	cli          *Camera
-	folder, file string
-	io.ReadCloser
-}
+const RootFolder = "/DCIM/"
 
 type Format string
 
@@ -32,6 +29,33 @@ const (
 	// Screennail is a larger JPEG than the thumbnail
 	Screennail Format = "screennail"
 )
+
+type File struct {
+	cli          *Camera
+	folder, file string
+	io.ReadCloser
+}
+
+// NewFileFromValueSetting returns a new File from a SettingValue, usually the
+// settings.LastFileNameSetting setting.
+func NewFileFromValueSetting(c *Camera, v *SettingValue) (*File, error) {
+	return NewFile(c, v.MustValueString())
+}
+
+// NewFile returns a new file for a given path.
+func NewFile(c *Camera, path string) (*File, error) {
+	if strings.Index(path, RootFolder) != 0 {
+		return nil, fmt.Errorf("unknown root folder for file %s", path)
+	}
+
+	path = path[len(RootFolder):]
+	parts := strings.Split(path, "/")
+	if len(parts) != 2 {
+		return nil, fmt.Errorf("unexpected filename %s", path)
+	}
+
+	return &File{cli: c, folder: parts[0], file: parts[1]}, nil
+}
 
 func (f *File) Folder() string {
 	return f.folder
@@ -135,7 +159,7 @@ type FileInformation struct {
 
 // ListFolders lists the folders in the DCIM directory
 func (c *Camera) ListFolders(ctx context.Context) ([]string, error) {
-	r, err := c.sendFileRequest(ctx, "/DCIM/")
+	r, err := c.sendFileRequest(ctx, RootFolder)
 	if err != nil {
 		return nil, err
 	}
@@ -145,7 +169,7 @@ func (c *Camera) ListFolders(ctx context.Context) ([]string, error) {
 
 // ListFiles lists the files in a specific folder
 func (c *Camera) ListFiles(ctx context.Context, folder string) ([]*File, error) {
-	endpoint := fmt.Sprintf("/DCIM/%s", folder)
+	endpoint := fmt.Sprintf(RootFolder+"%s", folder)
 	r, err := c.sendFileRequest(ctx, endpoint)
 	if err != nil {
 		return nil, err
@@ -181,37 +205,37 @@ func (c *Camera) ListAllFiles(ctx context.Context) ([]*File, error) {
 
 // OpenFile downloads a specific file from a given folder.
 func (c *Camera) OpenFile(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
-	endpoint := fmt.Sprintf("/DCIM/%s/%s", folder, filename)
+	endpoint := fmt.Sprintf(RootFolder+"%s/%s", folder, filename)
 	return c.getReader(ctx, endpoint)
 }
 
 // DeleteFile deletes a specific file from a given folder
 func (c *Camera) DeleteFile(ctx context.Context, folder, filename string) error {
-	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=rm", folder, filename)
+	endpoint := fmt.Sprintf(RootFolder+"%s/%s?act=rm", folder, filename)
 	return c.sendControlRequest(ctx, endpoint)
 }
 
 // OpenThumbnail fetches the thumbnail of a video file
 func (c *Camera) OpenThumbnail(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
-	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=thm", folder, filename)
+	endpoint := fmt.Sprintf(RootFolder+"%s/%s?act=thm", folder, filename)
 	return c.getReader(ctx, endpoint)
 }
 
 // OpenScreennail fetches a larger JPEG (screennail) of a video file
 func (c *Camera) OpenScreennail(ctx context.Context, folder, filename string) (io.ReadCloser, error) {
-	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=scr", folder, filename)
+	endpoint := fmt.Sprintf(RootFolder+"%s/%s?act=scr", folder, filename)
 	return c.getReader(ctx, endpoint)
 }
 
 // GetFileCreationTime gets the creation time of a video file
 func (c *Camera) GetFileCreationTime(ctx context.Context, folder, filename string) (*FileInformation, error) {
-	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=ct", folder, filename)
+	endpoint := fmt.Sprintf(RootFolder+"%s/%s?act=ct", folder, filename)
 	return c.sendFileInfoRequest(ctx, endpoint)
 }
 
 // GetFileInfo fetches the video file information including dimensions and duration
 func (c *Camera) GetFileInfo(ctx context.Context, folder, filename string) (*FileInformation, error) {
-	endpoint := fmt.Sprintf("/DCIM/%s/%s?act=info", folder, filename)
+	endpoint := fmt.Sprintf(RootFolder+"%s/%s?act=info", folder, filename)
 	return c.sendFileInfoRequest(ctx, endpoint)
 }
 

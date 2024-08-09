@@ -18,7 +18,7 @@ func init() {
 }
 
 func TestGetCameraInfo(t *testing.T) {
-	cli := NewCameraClient(CameraIP)
+	cli := NewCamera(CameraIP)
 
 	result, err := cli.GetCameraInfo(context.Background())
 	assert.NoError(t, err)
@@ -34,14 +34,14 @@ func TestGetCameraInfo(t *testing.T) {
 
 // TestStartSession tests the StartSession method
 func TestStartSession(t *testing.T) {
-	cli := NewCameraClient(CameraIP)
+	cli := NewCamera(CameraIP)
 	err := cli.StartSession(context.Background())
 	assert.NoError(t, err)
 }
 
 // TestQuitSession tests the QuitSession method
 func TestQuitSession(t *testing.T) {
-	cli := NewCameraClient(CameraIP)
+	cli := NewCamera(CameraIP)
 	err := cli.QuitSession(context.Background())
 	assert.NoError(t, err)
 }
@@ -51,7 +51,7 @@ func TestSyncDateTime(t *testing.T) {
 	server := mockServer()
 	defer server.Close()
 
-	client := NewCameraClient("")
+	client := NewCamera("")
 	client.baseURL = server.URL
 
 	result, err := client.SyncDateTime(context.Background(), time.Now())
@@ -64,7 +64,7 @@ func TestShutdownSystem(t *testing.T) {
 	server := mockServer()
 	defer server.Close()
 
-	client := NewCameraClient("")
+	client := NewCamera("")
 	client.baseURL = server.URL
 
 	result, err := client.ShutdownSystem(context.Background())
@@ -77,7 +77,7 @@ func TestRebootSystem(t *testing.T) {
 	server := mockServer()
 	defer server.Close()
 
-	client := NewCameraClient("")
+	client := NewCamera("")
 	client.baseURL = server.URL
 
 	result, err := client.RebootSystem(context.Background())
@@ -87,7 +87,7 @@ func TestRebootSystem(t *testing.T) {
 
 // TestErrorHandling tests error handling in the get method
 func TestErrorHandling(t *testing.T) {
-	client := NewCameraClient("")
+	client := NewCamera("")
 	client.baseURL = "http://invalid-url"
 
 	// Expecting an error when trying to make a request to an invalid URL

@@ -16,8 +16,8 @@ type Camera struct {
 	Client  *http.Client
 }
 
-// NewCameraClient initializes and returns a CameraClient
-func NewCameraClient(ip string) *Camera {
+// NewCamera initializes and returns a CameraClient
+func NewCamera(ip string) *Camera {
 	return &Camera{
 		baseURL: fmt.Sprintf("http://%s", ip),
 		Client:  &http.Client{},
@@ -72,6 +72,17 @@ func decodeBasicRequest(data []byte) error {
 	}
 
 	return nil
+}
+
+// CameraInfo struct models the camera information returned from the /info endpoint
+type CameraInfo struct {
+	Model  string `json:"model"`
+	Number string `json:"number"`
+	Sw     string `json:"sw"`
+	Hw     string `json:"hw"`
+	Mac    string `json:"mac"`
+	EthIP  string `json:"eth_ip"`
+	SN     string `json:"sn"`
 }
 
 // GetCameraInfo retrieves and returns the camera information

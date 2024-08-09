@@ -1,16 +1,5 @@
 package zcam
 
-// CameraInfo struct models the camera information returned from the /info endpoint
-type CameraInfo struct {
-	Model  string `json:"model"`
-	Number string `json:"number"`
-	Sw     string `json:"sw"`
-	Hw     string `json:"hw"`
-	Mac    string `json:"mac"`
-	EthIP  string `json:"eth_ip"`
-	SN     string `json:"sn"`
-}
-
 // WorkingModeResponse struct models the response from querying the working mode
 type WorkingModeResponse struct {
 	Code int    `json:"code"`

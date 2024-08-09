@@ -9,7 +9,7 @@ import (
 )
 
 func TestQueryStreamSetting(t *testing.T) {
-	cli := NewCameraClient(CameraIP)
+	cli := NewCamera(CameraIP)
 	is, err := cli.QueryStreamSetting(context.Background(), Stream1)
 	require.NoError(t, err)
 	fmt.Println(is)

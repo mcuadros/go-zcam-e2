@@ -1,5 +1,4 @@
 # go-zcam-e2 [![GoDoc](https://godoc.org/github.com/mcuadros/go-zcam-e2?status.svg)](https://godoc.org/github.com/mcuadros/go-zcam-e2) [![GitHub release](https://img.shields.io/github/release/mcuadros/go-zcam-e2.svg)](https://github.com/mcuadros/go-zcam-e2/releases)
-==============================
 
 The `go-zcam-e2` provides a comprehensive interface for interacting with [Z CAM](https://www.z-cam.com/) E2 series. It supports various functionalities including focus and zoom control, file management, card management, and network streaming.
 

@@ -14,7 +14,7 @@ func main() {
 	ctx, cancel := signal.NotifyContext(context.Background(), os.Interrupt)
 	defer cancel()
 
-	cli := zcam.NewCameraClient(os.Getenv("CAMERA_IP"))
+	cli := zcam.NewCamera(os.Getenv("CAMERA_IP"))
 
 	if err := cli.StartSession(ctx); err != nil {
 		log.Fatalf("error starting session: %s", err)

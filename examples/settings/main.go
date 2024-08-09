@@ -32,7 +32,7 @@ func main() {
 		settings.FocusSetting:        "AF",
 		settings.ResolutionSetting:   "1920x1080",
 		settings.VideoEncoderSetting: "H.265",
-		settings.MovVFRSetting:       240,
+		settings.MovVFRSetting:       120,
 	}
 
 	log.Printf("configuring %d setting(s)", len(s))
@@ -49,4 +49,5 @@ func main() {
 
 		fmt.Println(value)
 	}
+
 }

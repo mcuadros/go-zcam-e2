@@ -99,6 +99,26 @@ func (c *SettingValue) String() string {
 	return buf.String()
 }
 
+// CaptureStill capture a single fream from the stream, it returns the captured
+// file.
+func (c *Camera) CaptureStill(ctx context.Context) (*File, error) {
+	body, err := c.get(ctx, "/ctrl/still?action=single")
+	if err != nil {
+		return nil, err
+	}
+
+	if err := decodeBasicRequest(body); err != nil {
+		return nil, err
+	}
+
+	v, err := c.GetSetting(ctx, settings.LastFileNameSetting)
+	if err != nil {
+		return nil, fmt.Errorf("unable to recover %s setting: %w", settings.LastFileNameSetting, err)
+	}
+
+	return NewFileFromValueSetting(c, v)
+}
+
 // StartVideoRecord starts video recording or video timelapse recording
 func (c *Camera) StartVideoRecord(ctx context.Context) error {
 	body, err := c.get(ctx, "/ctrl/rec?action=start")

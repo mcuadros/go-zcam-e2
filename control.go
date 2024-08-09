@@ -205,14 +205,25 @@ func (c *Camera) GetSetting(ctx context.Context, key settings.Setting) (*Setting
 }
 
 // SetSetting changes a camera setting for a given key to a specified value
-func (c *Camera) SetSetting(ctx context.Context, key settings.Setting, value any) error {
-	endpoint := fmt.Sprintf("/ctrl/set?%s=%s", key, convertToString(value))
+func (c *Camera) SetSetting(ctx context.Context, setting settings.Setting, value any) error {
+	endpoint := fmt.Sprintf("/ctrl/set?%s=%s", setting, convertToString(value))
 	body, err := c.get(ctx, endpoint)
 	if err != nil {
 		return err
 	}
 
 	return decodeBasicRequest(body)
+}
+
+// SetSettings changes several camaras settings in a row.
+func (c *Camera) SetSettings(ctx context.Context, settings map[settings.Setting]any) error {
+	for setting, value := range settings {
+		if err := c.SetSetting(ctx, setting, value); err != nil {
+			return fmt.Errorf("error setting %s: %w", setting, err)
+		}
+	}
+
+	return nil
 }
 
 func convertToString(input any) string {

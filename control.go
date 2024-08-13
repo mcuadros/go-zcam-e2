@@ -301,9 +301,6 @@ func (c *Camera) ZoomControl(ctx context.Context, action string) error {
 
 // SetZoomPosition sets the zoom to a specific position within a valid range
 func (c *Camera) SetZoomPosition(ctx context.Context, position int) error {
-	if position < 0 || position > 31 {
-		return fmt.Errorf("zoom position out of range")
-	}
 	endpoint := fmt.Sprintf("/ctrl/set?lens_zoom_pos=%d", position)
 	return c.sendControlRequest(ctx, endpoint)
 }
